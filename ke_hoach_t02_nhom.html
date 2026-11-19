@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kế hoạch Triển khai Track T02 (Raw QC Triage) - Day 06 Data Lab</title>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #1557b0;
+      --primary-light: #e8f0fe;
+      --success: #1e8e3e;
+      --success-light: #e6f4ea;
+      --warning: #f9ab00;
+      --warning-light: #fef7e0;
+      --danger: #d93025;
+      --danger-light: #fce8e6;
+      --text: #202124;
+      --text-muted: #5f6368;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --border: #dadce0;
+      --radius: 10px;
+      --shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background-color: var(--bg);
+      padding: 30px 15px;
+    }
+    .container {
+      max-width: 1060px;
+      margin: 0 auto;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: white;
+      padding: 36px 30px;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(26,115,232,0.25);
+      margin-bottom: 25px;
+    }
+    .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .header p { opacity: 0.9; font-size: 15px; }
+    .badge-bar { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.22);
+      color: #fff;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px 28px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-size: 20px;
+      color: var(--primary-dark);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card h3 {
+      font-size: 16px;
+      color: var(--text);
+      margin: 18px 0 10px 0;
+    }
+    p, li { font-size: 14.5px; color: #3c4043; }
+    ul, ol { padding-left: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 6px; }
+
+    /* Flow Steps */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .flow-step {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      padding: 14px;
+      border-radius: 6px;
+    }
+    .flow-step-num { font-size: 11px; font-weight: 700; color: var(--primary-dark); text-transform: uppercase; }
+    .flow-step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 2px; }
+    .flow-step-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Tables */
+    .table-responsive { overflow-x: auto; margin: 16px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background-color: #f1f3f4;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    tr:hover { background-color: #fcfcfc; }
+    .role-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      white-space: nowrap;
+    }
+
+    /* Callouts */
+    .callout {
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin: 14px 0;
+      font-size: 13.5px;
+    }
+    .callout-warning {
+      background-color: var(--warning-light);
+      border-left: 4px solid var(--warning);
+      color: #7a5200;
+    }
+    .callout-danger {
+      background-color: var(--danger-light);
+      border-left: 4px solid var(--danger);
+      color: #901b13;
+    }
+    .callout-info {
+      background-color: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      color: var(--primary-dark);
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      margin: 20px 0 10px 10px;
+      border-left: 2px solid var(--border);
+      padding-left: 22px;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 18px;
+    }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -28px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+    .timeline-time {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--primary-dark);
+    }
+    .timeline-content { font-size: 13.5px; margin-top: 2px; }
+
+    /* Code blocks */
+    code {
+      background-color: #f1f3f4;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 12.5px;
+      color: #c5221f;
+    }
+    pre {
+      background-color: #202124;
+      color: #f8f9fa;
+      padding: 14px 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      margin: 10px 0;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+
+    /* Checklist */
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      margin-bottom: 8px;
+    }
+    .checklist input { margin-top: 3px; }
+
+    .footer {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+      .header { background: #1a73e8 !important; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>Kế hoạch Triển khai Nhóm · Track T02 (Raw QC Triage)</h1>
+    <p>Field-to-Release PoC · Day 06 Data Lab · Bài toán phân loại & xếp hạng ảnh lỗi cảm biến</p>
+    <div class="badge-bar">
+      <span class="badge">Track: T02</span>
+      <span class="badge">Budget: B=20</span>
+      <span class="badge">Primary: Defect Recall@B</span>
+      <span class="badge">Thời lượng: 240 phút</span>
+      <span class="badge">Môi trường: Offline & Seed 42</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: HIỂU BÀI TOÁN -->
+  <div class="card">
+    <h2>1. Hiểu Bài Toán & Bối Cảnh T02</h2>
+    <p>
+      Hệ thống thu thập dữ liệu camera giao thông/xe tự hành gồm <strong>96 ảnh synthetic</strong> từ 24 cảnh quay gốc 
+      (thuộc 2 camera <code>cam_A</code>, <code>cam_B</code> và 3 điều kiện ánh sáng <code>day</code>, <code>dusk</code>, <code>night</code>; chia 60% dev / 40% eval theo scene). 
+      Dữ liệu bị lẫn các ảnh lỗi kỹ thuật: <strong>mờ (blur)</strong>, <strong>lóa sáng (glare)</strong>, <strong>thiếu sáng (dark)</strong>, và <strong>nén vỡ khối (compression)</strong>.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>Mục tiêu cốt lõi:</strong> Xây dựng pipeline tự động tính toán và xếp hạng độ nghi ngờ lỗi (<code>score</code>) của từng ảnh. 
+      Với ngân sách kiểm duyệt của con người cố định là <strong>B = 20 ảnh</strong>, thuật toán phải đưa các ảnh lỗi thật lên đầu để người kiểm duyệt tìm được nhiều ảnh lỗi nhất có thể, đưa ra quyết định <code>KEEP</code> (giữ lại) hoặc <code>RECAPTURE</code> (chụp lại).
+    </div>
+
+    <h3>Chỉ số đánh giá (Metrics Contract)</h3>
+    <ul>
+      <li><strong>Primary Metric:</strong> <code>Defect Recall@B</code> (với B=20 trên tập <code>eval</code>) = (Số ảnh lỗi thật trong top 20) / (Tổng số ảnh lỗi thật trong tập eval). Kèm theo <code>Precision@B</code> = (Số ảnh lỗi thật trong top 20) / 20.</li>
+      <li><strong>Secondary Metrics:</strong>
+        <ul>
+          <li>Tỉ lệ báo động giả (False alarm) theo từng lát cắt ánh sáng (<code>light: day / dusk / night</code>).</li>
+          <li>Độ chính xác nhận diện đúng loại lỗi (<code>Defect-type accuracy</code> nếu có sinh cột <code>pred_defect_type</code>).</li>
+          <li>Thời gian xử lý: Latency &lt; 50ms/ảnh trên CPU tiêu chuẩn.</li>
+        </ul>
+      </li>
+      <li><strong>Output bắt buộc:</strong> <code>out/ranked_review.csv</code> (gồm <code>image_id, score</code>, khuyến nghị thêm <code>pred_defect_type, pred_action</code>).</li>
+    </ul>
+  </div>
+
+  <!-- SECTION 2: QUY TRÌNH KỸ THUẬT -->
+  <div class="card">
+    <h2>2. Chiến Lược Kỹ Thuật (Architecture & Pipeline)</h2>
+    <p>Pipeline của nhóm nằm trọn vẹn trong file <code>src/pipeline.py</code>, tuân theo đúng 5 bước chuẩn của bài lab:</p>
+
+    <div class="flow-grid">
+      <div class="flow-step">
+        <div class="flow-step-num">Bước 01</div>
+        <div class="flow-step-title">Load & Provenance</div>
+        <div class="flow-step-desc">Đọc <code>images.csv</code>, kiểm tra hash SHA-256 từ <code>manifest.csv</code>.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">Bước 02</div>
+        <div class="flow-step-title">Process (Thuật toán)</div>
+        <div class="flow-step-desc">Tính trích xuất đặc trưng đa chiều, chuẩn hóa theo metadata và tính tổng hợp <code>score</code>.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">Bước 03</div>
+        <div class="flow-step-title">Rank (Xếp hạng)</div>
+        <div class="flow-step-desc">Trích Top-20 ảnh nghi lỗi nhất ra <code>out/review_queue.csv</code> và tạo Contact Sheet HTML.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">Bước 04</div>
+        <div class="flow-step-title">Review (Human)</div>
+        <div class="flow-step-desc">Reviewer kiểm duyệt trên HTML, xuất file override, nạp lại và ghi <code>audit_log.jsonl</code>.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">Bước 05</div>
+        <div class="flow-step-title">Decide (Cổng phát hành)</div>
+        <div class="flow-step-desc">Quyết định GO / HOLD / REWORK với <code>reason_code</code> và <code>owner</code>.</div>
+      </div>
+    </div>
+
+    <h3>Tại sao Baseline thất bại & Giải pháp PoC của nhóm</h3>
+    <ul>
+      <li><strong>Baseline:</strong> Chỉ dùng một ngưỡng phương sai Laplacian toàn ảnh duy nhất (<code>laplacian_variance</code>) để tính độ mờ.</li>
+      <li><strong>Các điểm yếu chết người của Baseline (Failure Modes):</strong>
+        <ol>
+          <li><strong>Ảnh đêm sạch (Clean Night):</strong> Độ tương phản ban đêm thấp nên Laplacian tự nhiên thấp $\rightarrow$ Baseline báo lỗi oan (False Alarm cao ở lát cắt đêm).</li>
+          <li><strong>Lóa cục bộ (Local Glare):</strong> Ảnh ban ngày nét nhưng bị cháy sáng một vùng (biển số/đèn pha) $\rightarrow$ Laplacian toàn ảnh vẫn cao nên Baseline bỏ sót lỗi.</li>
+          <li><strong>Khác biệt phần cứng (Camera A vs Camera B):</strong> <code>cam_B</code> có thấu kính quang học mềm hơn nên Laplacian thấp hơn <code>cam_A</code> $\rightarrow$ Dùng chung 1 ngưỡng sẽ phạt nhầm <code>cam_B</code>.</li>
+        </ol>
+      </li>
+      <li><strong>Thuật toán PoC cải tiến (Multi-feature + Metadata Normalization):</strong>
+        <ul>
+          <li><strong>Blur:</strong> Chia ảnh thành lưới 4x4 (patch-based), tính min/median Laplacian giữa các patch để không bị ảnh hưởng bởi vùng nền phẳng.</li>
+          <li><strong>Dark:</strong> Tỉ lệ pixel tối <code>frac_dark = (gray < 30).mean()</code> và phân vị <code>p05</code>.</li>
+          <li><strong>Glare:</strong> Tỉ lệ pixel bão hòa cháy trắng <code>frac_saturated = (gray > 245).mean()</code>.</li>
+          <li><strong>Compression:</strong> Đo gradient gián đoạn ở ranh giới các khối 8x8 (blockiness).</li>
+          <li><strong>Calibration:</strong> Chuẩn hóa Z-score của từng đặc trưng theo nhóm <code>(camera_id, light)</code> được fit chỉ trên tập <code>dev</code>! Nhờ vậy, ảnh ban đêm chỉ bị tính là lỗi nếu tối bất thường so với mức trung bình của các ảnh đêm khác.</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <!-- SECTION 3: BẢNG PHÂN CHIA CÔNG VIỆC -->
+  <div class="card">
+    <h2>3. Bảng Phân Chia Công Việc Chi Tiết (5 Thành Viên)</h2>
+    <p>Phân công rõ ràng theo đúng cấu trúc của <code>reports/team_contributions.csv</code> và tiêu chí chấm điểm (Rubric):</p>
+
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Thành viên & Vai trò</th>
+            <th>Nhiệm vụ trọng tâm</th>
+            <th>File code / Tài liệu phụ trách</th>
+            <th>Kết quả bàn giao (Deliverables)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong>Thành viên 1</strong><br>
+              <span class="role-badge">Lead & Integrator</span>
+            </td>
+            <td>
+              - Quản lý repo, điều phối Git và luồng chạy.<br>
+              - Cấu hình chuẩn <code>configs/lab.yaml</code>.<br>
+              - Hoàn thiện nối dây luồng E2E trong <code>src/pipeline.py</code> (load, rank, run).<br>
+              - Kiểm soát chế độ <code>--offline</code>, cố định <code>seed 42</code>, gắn tag <code>demo-180m</code>.
+            </td>
+            <td>
+              <code>configs/lab.yaml</code><br>
+              <code>src/pipeline.py</code><br>
+              <code>Makefile</code>
+            </td>
+            <td>
+              - Lệnh <code>make run TRACK=t02</code> chạy exit code 0.<br>
+              - Tag Git đúng hạn 180 phút.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong>Thành viên 2</strong><br>
+              <span class="role-badge">Data & Baseline Specialist</span>
+            </td>
+            <td>
+              - Phân tích EDA tập <code>fixtures/t02_raw_qc/images.csv</code>.<br>
+              - Chạy và ghi nhận số liệu Baseline (ngưỡng Laplacian toàn ảnh).<br>
+              - Tìm và trích xuất <strong>2 failure cases điển hình</strong> (ảnh đêm bị phạt nhầm, ảnh lóa biển số bị sót) kèm ảnh minh họa và root cause.
+            </td>
+            <td>
+              <code>src/examples/random_baseline.py</code><br>
+              <code>reports/metrics_baseline.json</code><br>
+              <code>fixtures/t02_raw_qc/</code>
+            </td>
+            <td>
+              - File <code>metrics_baseline.json</code>.<br>
+              - Phân tích 2 ca lỗi biên nạp vào báo cáo.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong>Thành viên 3</strong><br>
+              <span class="role-badge">Core Algorithm Engineer</span>
+            </td>
+            <td>
+              - Cài đặt hàm <code>process()</code> trong <code>src/pipeline.py</code>.<br>
+              - Viết các bộ trích xuất đặc trưng: Patch Laplacian, Glare Saturation, Dark Ratio, JPEG Blockiness.<br>
+              - Chuẩn hóa Z-score theo <code>(camera_id, light)</code> trên tập <code>dev</code> để tính điểm dị thường <code>score</code>.
+            </td>
+            <td>
+              <code>src/pipeline.py</code><br>
+              <code>src/common/image_ops.py</code>
+            </td>
+            <td>
+              - Hàm <code>process()</code> tối ưu, sinh đủ cột <code>image_id, score, pred_defect_type</code>.<br>
+              - Đạt Recall@20 vượt trội so với baseline.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong>Thành viên 4</strong><br>
+              <span class="role-badge">QA, Testing & Metrics</span>
+            </td>
+            <td>
+              - Điền và chốt hợp đồng metric <code>reports/metric_contract.md</code> trước phút 30.<br>
+              - Viết $\ge 2$ unit tests mới trong thư mục <code>tests/</code> (test schema output và edge case: ảnh đen hoàn toàn, ảnh trắng hoàn toàn).<br>
+              - Chạy script so sánh để sinh bảng kết quả <code>table1_baseline_vs_poc.md</code>.
+            </td>
+            <td>
+              <code>reports/metric_contract.md</code><br>
+              <code>tests/test_t02_pipeline.py</code><br>
+              <code>reports/table1_baseline_vs_poc.md</code>
+            </td>
+            <td>
+              - <code>metric_contract.md</code> chốt đúng hạn.<br>
+              - <code>pytest -q</code> chạy 100% pass (0 failed).<br>
+              - Bảng so sánh số liệu tự động.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong>Thành viên 5</strong><br>
+              <span class="role-badge">Human Review & Report Lead</span>
+            </td>
+            <td>
+              - Vận hành vòng Human-in-the-loop: Mở HTML contact sheet, duyệt 20 ảnh, xuất file override <code>review_queue_reviewed.csv</code>.<br>
+              - Cài đặt chính sách <code>decide()</code> (ra quyết định GO/HOLD/REWORK kèm reason code).<br>
+              - Chấp bút báo cáo <code>reports/group_report.md</code> và hoàn thiện <code>reports/team_contributions.csv</code>.<br>
+              - Chuẩn bị 3–5 slides demo cho phiên Showcase & Phản biện.
+            </td>
+            <td>
+              <code>reports/group_report.md</code><br>
+              <code>reports/team_contributions.csv</code><br>
+              <code>out/poc/audit_log.jsonl</code><br>
+              <code>demo/</code>
+            </td>
+            <td>
+              - <code>group_report.md</code> đầy đủ số liệu.<br>
+              - File <code>audit_log.jsonl</code> chuẩn chỉ.<br>
+              - Slide trình chiếu demo phản biện.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-warning">
+      <strong>Lưu ý về quy mô nhóm:</strong>
+      <ul>
+        <li><strong>Nếu nhóm 4 người:</strong> Thành viên 1 kiêm nhiệm phần QA/Testing của TV4.</li>
+        <li><strong>Nếu nhóm 6 người:</strong> Thêm 1 thành viên chuyên làm <em>Ablation Study</em> và <em>Thử nghiệm trên dữ liệu thật <code>data/real/</code></em> để lấy điểm cộng bonus (tối đa +15 điểm).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 4: TIMELINE 240 PHÚT -->
+  <div class="card">
+    <h2>4. Lộ Trình Triển Khai Thực Tế (Timeline 240 Phút)</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-time">00 – 10 phút · Khởi động & Phân quyền</div>
+        <div class="timeline-content">Cập nhật <code>configs/lab.yaml</code> (group_id, owner). Mỗi thành viên pull repo và tạo 1 commit đầu tiên vào Git (ghi tên mình vào <code>team_contributions.csv</code>).</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">10 – 30 phút · Chốt Hợp đồng Metric</div>
+        <div class="timeline-content">TV4 điền và hoàn thành <code>reports/metric_contract.md</code>. Cam kết Primary Metric là Defect Recall@20, seed 42. Tuyệt đối không sửa sau mốc này.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">30 – 50 phút · Đo lường Baseline</div>
+        <div class="timeline-content">TV2 chạy baseline, xuất <code>reports/metrics_baseline.json</code>. Phân tích các nhược điểm của Laplacian đơn lẻ trên ảnh đêm và lóa.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">50 – 145 phút · Xây dựng PoC & Vòng Human Review</div>
+        <div class="timeline-content">TV3 code thuật toán đa đặc trưng trong <code>src/pipeline.py</code>. TV1 tích hợp pipeline. TV5 mở Contact Sheet HTML duyệt 20 ảnh, xuất file override. TV4 viết unit tests.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">145 – 170 phút · So sánh & Hoàn thiện Báo cáo</div>
+        <div class="timeline-content">Chạy script so sánh tự động <code>python -m src.compare</code> sinh bảng Table 1. TV5 hoàn thành các mục trong <code>reports/group_report.md</code>. TV4 chạy <code>pytest -q</code> đảm bảo xanh 100%.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">170 – 180 phút · Freeze Demo & Chuẩn bị Slide</div>
+        <div class="timeline-content">TV1 gắn tag: <code>git tag -a demo-180m -m "Freeze demo 180m"</code>. Hoàn tất 3–5 slide giới thiệu kiến trúc, kết quả và failure cases.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">180 – 240 phút · Showcase & Phản biện (Debate)</div>
+        <div class="timeline-content">Demo trực tiếp trước lớp, tham gia phản biện tìm ca lỗi (adversarial test) với nhóm bạn.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: CHECKLIST & QUY TẮC SỐNG CÒN -->
+  <div class="card">
+    <h2>5. Checklist Sống Còn Tránh Bị Trừ Điểm (Rubric 100đ)</h2>
+    <ul class="checklist">
+      <li>
+        <input type="checkbox" checked disabled>
+        <span><strong>Tuyệt đối không đọc ground truth:</strong> Không chạm vào <code>fixtures/*/gt/</code> trong code pipeline (hệ thống có GT guard, vi phạm sẽ văng exit code 5).</span>
+      </li>
+      <li>
+        <input type="checkbox" checked disabled>
+        <span><strong>Chế độ hoàn toàn Offline:</strong> Luôn chạy với cờ <code>--offline</code>, không gọi mạng internet, không gọi API ngoài khi chạy test và demo (vi phạm văng exit code 4).</span>
+      </li>
+      <li>
+        <input type="checkbox" checked disabled>
+        <span><strong>Bằng chứng Git đầy đủ:</strong> Mỗi thành viên trong nhóm bắt buộc có $\ge 1$ commit thực chất (khuyến nghị $\ge 2$ commits). Lệnh <code>git shortlog -sne --all</code> phải khớp tên/email trong <code>reports/team_contributions.csv</code>.</span>
+      </li>
+      <li>
+        <input type="checkbox" checked disabled>
+        <span><strong>Không nhập tay số liệu:</strong> Mọi số liệu trong báo cáo và bảng so sánh phải được sinh tự động từ script <code>src.evaluate</code> và <code>src.compare</code>.</span>
+      </li>
+      <li>
+        <input type="checkbox" checked disabled>
+        <span><strong>Đủ ít nhất 2 unit test:</strong> Chạy <code>pytest -q</code> phải pass 100%, có ít nhất 1 test ca thành công và 1 test ca biên/lỗi.</span>
+      </li>
+    </ul>
+
+    <h3>Các lệnh contract giảng viên sẽ chạy để chấm điểm:</h3>
+    <pre><code># 1. Chạy PoC hoàn chỉnh (bắt buộc exit code 0)
+python -m src.main --config configs/lab.yaml --output out/poc --offline --seed 42
+
+# 2. Kiểm tra bộ unit tests (bắt buộc 0 failed)
+pytest -q
+
+# 3. So sánh kết quả Baseline vs PoC
+python -m src.compare reports/metrics_baseline.json reports/metrics_poc.json --out reports/table1_baseline_vs_poc.md
+
+# 4. Kiểm tra lịch sử đóng góp Git
+git shortlog -sne --all</code></pre>
+  </div>
+
+  <div class="footer">
+    <p>Tài liệu chuẩn bị cho Day 06 Data Lab · AI20K Track · Field-to-Release PoC</p>
+    <p>Lưu file này và mở bằng bất kỳ trình duyệt nào (Chrome, Edge, Safari, Firefox) hoặc chia sẻ trực tiếp vào nhóm chat.</p>
+  </div>
+
+</div>
+
+</body>
+</html>
